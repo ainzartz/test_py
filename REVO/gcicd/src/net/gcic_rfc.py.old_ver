@@ -1,0 +1,73 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from pyrfc import Connection
+import sockets
+import json
+from multiprocessing import Queue
+import time
+
+class GCICIF():
+    def __init__(self, settings):
+	self.settings = settings
+        ASHOST=settings['db']['gcic']['ASHOST']
+        CLIENT=settings['db']['gcic']['CLIENT']
+        SYSNR=settings['db']['gcic']['SYSNR']
+        USER=settings['db']['gcic']['USER']
+        PASSWD=settings['db']['gcic']['PASSWD']
+	"""
+        ASHOST='105.1.12.58'
+	print ASHOST
+        CLIENT='100'
+        SYSNR='00'
+        USER='R_I_IVR_C300'
+        PASSWD='gcic2015if'
+	"""
+
+	try:
+        	self.conn = Connection(ashost=ASHOST, sysnr=SYSNR, client=CLIENT, user=USER, passwd=PASSWD)
+	except CommunicationError:
+		print "RFC_COMMUNICATION_FAILURE"
+		time.sleep(10)
+        	self.conn = Connection(ashost=ASHOST, sysnr=SYSNR, client=CLIENT, user=USER, passwd=PASSWD)
+		
+
+    def pp_json(json_thing, sort=True, indents=4):
+        if type(json_thing) is str:
+            print(json.dumps(json.loads(json_thing), sort_keys=sort, indent=indents))
+        else:
+            print(json.dumps(json_thing, sort_keys=sort, indent=indents))
+        return None
+
+    def query(self, company, conn_id):
+        """A function to query SAP with RFC_READ_TABLE"""
+	it = {}
+	it['COMPANY'] = 'C310'
+	it['CALL_ID'] = conn_id.upper()
+
+        tables = self.conn.call("ZIF_GET_CALLINFO", IT_LIST = [ it ])
+	dic_ = {}
+	dic_ = tables
+	#print tables
+	ret = tables["ET_LIST"]
+
+	if ret == []:
+		print "\tGCIC: Conn ID does not exist!", conn_id
+
+	#guid = tables["ET_LIST"][0]["GUID"]
+	#print tables["ET_LIST"][0]["COUNTRY"]
+	#for a in dic_:
+	#	print a, dic_[a]
+	
+	#receiver_ip = self.settings["receiver"]["ip"]
+	#receiver_port = self.settings["receiver"]["port"]
+	#print receiver_ip, receiver_port
+	#with sockets.safe_allocate_udp_client() as client:
+        #   client.sendto(str(ret), (receiver_ip, receiver_port))
+	return ret
+
+"""
+a = GCICIF()
+b = a.query('c310', '007502bc20053318')
+#b = a.query('c310', '014102BC20308B66')
+print b
+"""
