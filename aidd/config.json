@@ -1,0 +1,24 @@
+{
+    "router": {
+        "port": 5810
+    },
+    "worker": {
+        "count": 10
+    },
+    "db": {
+        "gcic": {
+            "MSHOST": "105.1.12.58",
+            "CLIENT": "100",
+            "SYSID": "CUP",
+            "USER": "R_I_IVR_C300",
+	          "PASSWD": "gcic2015if",
+	          "SAPROUTER": "",
+	          "GROUP": "IFGRP",
+            "MSSERV": "3600"
+	      }
+    },
+    "receiver": {
+        "ip": "105.20.2.36",
+        "port": 5820
+    }
+}
