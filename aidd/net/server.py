@@ -13,8 +13,7 @@ from collections import deque
 from multiprocessing import Process
 from multiprocessing import cpu_count
 from net.sockets import safe_allocate_udp_server
-# from net.worker import LazyWorker
-from worker import LazyWorker
+#from net.worker import LazyWorker
 from threading import Thread
 
 logger = logging.getLogger()
@@ -51,21 +50,23 @@ class AsynchronousServer(object):
         if not setting:
             sys.exit(errno.EINVAL)
         self.settings = setting
+        print(self.settings)
         logger.info('successfully initialized server.')
 
     def serve(self):
         try:
             port = int(self.settings['router']['port'])
+            logger.info('Listening Port # %s', port)
         except KeyError:
             port = 8080 # udp
         # assign asynchronous handler to the receiving port. Currently,
         # `asyncore` module was chosen in order to provide backward
         # compatibility with Python 2 (where there's no `asyncio`). All
         # incoming traffic is routed and initially handled by the router.
-        with safe_allocate_udp_server(port=port) as socket:
-            self.router = AsynchronousRouter(self.settings, socket)
-            self.router.initialize_consumer()
-            asyncore.loop() # push new events to the event loop.
+        # with safe_allocate_udp_server(port=port) as socket:
+        #     self.router = AsynchronousRouter(self.settings, socket)
+        #     self.router.initialize_consumer()
+        #     asyncore.loop() # push new events to the event loop.
 
 class AsynchronousRouter(asyncore.dispatcher):
     ''' Asynchronous SIP router to demultiplex and delegate work to workers.

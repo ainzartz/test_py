@@ -9,7 +9,7 @@ except AssertionError:
 
 
 import util.config as cfg
-
+import net.server  as srv 
 
 
 
@@ -35,24 +35,28 @@ def main():
     
 #    print(os.path.abspath(os.path.curdir)+'\\aidd\\config.json')
      config_file = os.path.abspath(os.path.curdir) + '\\aidd\\config.json'
-     print(logging_format) 
+#     print(logging_format) 
 
-#     print(config_file)
+     
 #     print(os.path.exists(config_file))
 #     print(os.path.isfile(config_file))
      if os.path.exists(config_file) and os.path.isfile(config_file):
          with open(config_file) as config_buffer:
              config = cfg.parse_config(config_buffer.read())
-#             print(config)
-#             dir(config)
+             print(config)
+             dir(config)
+
      else:
          sys.stderr.write("<main>:file does not exist: '%s'.\n", config_file)
          return errno.ENOENT
-#    server = AsynchronousServer(config)
-#    try:
-#       return server.serve()
-#    except KeyboardInterrupt:
-#        pass
+
+
+     server = srv.AsynchronousServer(config)
+
+     try:
+       return server.serve()
+     except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
