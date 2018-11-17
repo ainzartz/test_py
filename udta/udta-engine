@@ -1,0 +1,163 @@
+#!/usr/bin/env python
+
+from __future__ import absolute_import
+
+import SocketServer
+import gc
+import json
+import logging
+import os
+import random
+import sys
+
+try:
+    assert sys.version_info < (3, 0)
+except AssertionError:
+    raise RuntimeError("run with Python 2.7 interpreter")
+
+# Minds Lab engine dependencies:
+exe_path = os.path.realpath(sys.argv[0])
+bin_path = os.path.dirname(exe_path)
+conf_path = os.path.realpath(bin_path + "/../conf")
+lib_path = os.path.realpath(bin_path + "/../lib")
+sys.path.append(lib_path)
+
+import grpc
+from google.protobuf import json_format
+from maum.brain.cl import classifier_pb2
+from maum.brain.cl import classifier_pb2_grpc
+from maum.brain.hmd import hmd_pb2
+from maum.brain.hmd import hmd_pb2_grpc
+from maum.common import lang_pb2
+
+logging.basicConfig(level=logging.DEBUG, format="%(name)s:[%(levelname)s]: %(message)s")
+logger = logging.getLogger()
+
+
+#
+# Server
+#
+
+
+# SAMPLE_REQUEST = json.dumps(
+#     {
+#         "text": "",
+#         "hmd": {
+#             "model_names": ["H_SEN_hmd"],
+#             "engines": [{"addr": "105.20.7.54", "port": 19819}],
+#         },
+#         "dnn": {
+#             "model_names": ["sentiment"],
+#             "engines": [{"addr": "105.20.7.54", "port": 9820}],
+#         },
+#     }
+# )
+
+
+def initialize_ta_clients(spec):
+    """
+    @spec<dict> -- TA engines specification
+    :ret: (hmd_clients, dnn_clients)
+    """
+    if not isinstance(spec, (dict,)):
+        return (None, None)
+
+    hmd_clients, dnn_clients = [], []
+
+    clients = spec.get("hmd", {}).get("engines", [])
+    if not clients:
+        logger.warning("no Hmd clients were created")
+
+    for client in clients:
+        try:
+            task = parse_redis_result(get_key_from_redis(key=identifier))
+            channel = grpc.insecure_channel(
+                "%s:%s" % (client["addr"], str(client["port"]))
+            )
+            stub = hmd_pb2_grpc.HmdClassifierStub(channel)
+            hmd_clients.append(stub)
+        except Exception as error:
+            logger.error("failed to create a Hmd client: %s", error)
+
+    clients = spec.get("dnn", {}).get("engines", [])
+    if not clients:
+        logger.warning("no Dnn clients were created")
+
+    for client in clients:
+        try:
+            # DNN resolver
+            resolver_channel = grpc.insecure_channel(
+                "%s:%s" % (client["addr"], str(client["port"]))
+            )
+            resolver_stub = classifier_pb2_grpc.ClassifierResolverStub(resolver_channel)
+            dnn_clients.append(resolver_stub)
+        except Exception as error:
+            logger.error("failed to create a Hmd client: %s", error)
+
+    logger.info("created clients => %s", (hmd_clients, dnn_clients))
+    return (hmd_clients, dnn_clients)
+
+
+class Handler(SocketServer.BaseRequestHandler):
+    """ request handler """
+
+    def handle(self):
+        self.data = self.request.recv(0x400).strip()
+
+        res = {"result": {"text": "", "hmd": [], "dnn": []}}
+        try:
+            # req = json.loads(SAMPLE_REQUEST)
+            req = json.loads(self.data)
+            logger.info(">>> %s", req)
+        except ValueError:
+            self.request.sendall(json.dumps(res))
+            return
+        else:
+            text = req.get("text")
+            if not text:
+                return res
+
+        hmd_clients, dnn_resolvers = initialize_ta_clients(req)
+
+        # retrieve Hmd results
+        models = req.get("hmd", {}).get("model_names", [])
+        if hmd_clients and models:
+            for model in models:
+                buf = hmd_pb2.HmdInputText(model=model, lang=lang_pb2.eng, text=text)
+                result = random.choice(hmd_clients).GetClassByText(buf)
+
+                # convert Protobuf results into JSON
+                _result = json.loads(json_format.MessageToJson(result, True))
+                detection = _result["cls"]
+                res["result"]["hmd"].extend(detection)
+
+        # retrieve Dnn results
+        models = req.get("dnn", {}).get("model_names", [])
+        if dnn_resolvers and models:
+           for model in models:
+               resolve_model = classifier_pb2.Model(model=model, lang=lang_pb2.eng)
+               try:
+                   server_status = random.choice(dnn_resolvers).Find(resolve_model)
+               except grpc.RpcError as error:
+                   logger.error("Model not found: %s", error)
+                   continue
+
+               channel = grpc.insecure_channel(server_status.server_address)
+               stub = classifier_pb2_grpc.ClassifierStub(channel)
+               _model = classifier_pb2.ClassInputText(text=text, model=resolve_model, lang=lang_pb2.eng)
+               result = stub.GetClass(_model)
+               logger.critical(result)
+
+        # respond with data
+        res["result"]["text"] = text
+        logger.debug("<<< %s", json.dumps(res))
+        self.request.sendall(json.dumps(res))
+
+
+if __name__ == "__main__":
+    try:
+        SERVER_ADDRESS = ("127.0.0.1", 4001)
+        server = SocketServer.TCPServer(SERVER_ADDRESS, Handler)
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass

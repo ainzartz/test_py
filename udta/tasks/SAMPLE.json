@@ -1,0 +1,58 @@
+{
+    "task": {
+        "name": "",
+        "hmd_models": [],
+        "dnn_models": [],
+        "sql_filepath": "",
+        "sql_type": {
+            "impala": false,
+            "mysql": true
+        }
+    },
+    "output": {
+        "save_to_file": {
+            "enable": false,
+            "path": ""
+        },
+        "save_to_db": {
+            "enable": false,
+            "db_type": {
+                "impala": null,
+                "mssql": null,
+                "mysql": null
+            }
+        }
+    },
+    "udta_engine": {
+        "addr": "127.0.0.1",
+        "port": 4001
+    },
+    "ta_engine": {
+        "hmd": [
+            { "addr": "127.0.0.1", "port": 9880 }
+        ],
+        "dnn": [
+            { "addr": "127.0.0.1", "port": 9880 }
+        ]
+    },
+    "auth": {
+        "impala": {
+            "addr": "127.0.0.1",
+            "port": 21000,
+            "user": "",
+            "pass": ""
+        },
+        "mssql": {
+            "addr": "127.0.0.1",
+            "port": 1433,
+            "user": "",
+            "pass": ""
+        },
+        "mysql": {
+            "addr": "127.0.0.1",
+            "port": 3306,
+            "user": "",
+            "pass": ""
+        }
+    }
+}

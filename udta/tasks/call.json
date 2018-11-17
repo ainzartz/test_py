@@ -1,0 +1,61 @@
+{
+    "task": {
+        "name": "",
+        "hmd_models": ["H_SEN_hmd", "x"],
+        "dnn_models": ["sentiment"],
+        "sql_filepath": "/apps/udta/tasks/call.sql",
+        "sql_type": {
+            "impala": false,
+            "mysql": true
+        }
+    },
+    "output": {
+        "save_to_file": {
+            "enable": false,
+            "path": ""
+        },
+        "save_to_db": {
+            "enable": false,
+            "db_type": {
+                "impala": null,
+                "mssql": null,
+                "mysql": null
+            }
+        }
+    },
+    "udta_engine": {
+        "addr": "127.0.0.1",
+        "port": 4001
+    },
+    "ta_engine": {
+        "hmd": [
+            { "addr": "105.20.7.54", "port": 9880 }
+        ],
+        "dnn": [
+            { "addr": "105.20.7.54", "port": 9880 }
+        ]
+    },
+    "auth": {
+        "impala": {
+            "addr": "105.90.12.123",
+            "port": 21050,
+            "user": "",
+            "pass": "",
+            "db_name": "sirv"
+        },
+        "mssql": {
+            "addr": "127.0.0.1",
+            "port": 1433,
+            "user": "",
+            "pass": "",
+            "db_name": ""
+        },
+        "mysql": {
+            "addr": "105.20.2.37",
+            "port": 3306,
+            "user": "minds",
+            "pass": "Minds12#$",
+            "db_name": "BIZ"
+        }
+    }
+}
